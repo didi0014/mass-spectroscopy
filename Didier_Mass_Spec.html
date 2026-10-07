@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Didier's Mass Spec Tool</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: #f5f7fa;
+            color: #172554;
+        }
+
+        header {
+            background: #172554;
+            color: white;
+            text-align: center;
+            padding: 25px 15px 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            font-size: 0.95rem;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: 25px auto;
+            padding: 0 20px 40px;
+        }
+
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .controls label {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        select {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            padding: 9px 35px 9px 12px;
+            border: 2px solid #172554;
+            border-radius: 7px;
+            background: white;
+            color: #172554;
+            cursor: pointer;
+        }
+
+        .spectrum-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 25px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+
+        .spectrum-title {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 450px;
+            width: 100%;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .info-card h2 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 1.3rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            background: #172554;
+            color: white;
+            padding: 11px;
+            text-align: center;
+        }
+
+        td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .chart-container {
+                height: 350px;
+            }
+
+            .container {
+                padding: 0 10px 30px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Didier's Mass Spec Tool</h1>
+    <p>Explore the natural abundance of isotopes</p>
+</header>
+
+<div class="container">
+
+    <div class="controls">
+        <label for="elementSelect">Choose an element:</label>
+
+        <select id="elementSelect">
+            <option value="boron">Boron (B)</option>
+            <option value="chlorine">Chlorine (Cl)</option>
+            <option value="magnesium">Magnesium (Mg)</option>
+            <option value="germanium">Germanium (Ge)</option>
+            <option value="copper">Copper (Cu)</option>
+            <option value="carbon">Carbon (C)</option>
+            <option value="neon">Neon (Ne)</option>
+            <option value="silicon">Silicon (Si)</option>
+            <option value="bromine">Bromine (Br)</option>
+            <option value="sulfur">Sulfur (S)</option>
+        </select>
+    </div>
+
+    <div class="spectrum-card">
+
+        <h2 class="spectrum-title" id="spectrumTitle">
+            Chlorine Mass Spectrum
+        </h2>
+
+        <div class="chart-container">
+            <canvas id="massSpectrum"></canvas>
+        </div>
+
+    </div>
+
+    <div class="info-card">
+
+        <h2>Isotope Data</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Isotope</th>
+                    <th>Mass Number</th>
+                    <th>Percent Abundance</th>
+                </tr>
+            </thead>
+
+            <tbody id="isotopeTable">
+            </tbody>
+        </table>
+
+    </div>
+
+    <footer>
+        Didier's Mass Spec Tool
+    </footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+const elements = {
+
+    boron: {
+        name: "Boron",
+        symbol: "B",
+        isotopes: [
+            { mass: 10, abundance: 19.9 },
+            { mass: 11, abundance: 80.1 }
+        ]
+    },
+
+    chlorine: {
+        name: "Chlorine",
+        symbol: "Cl",
+        isotopes: [
+            { mass: 35, abundance: 75.78 },
+            { mass: 37, abundance: 24.22 }
+        ]
+    },
+
+    magnesium: {
+        name: "Magnesium",
+        symbol: "Mg",
+        isotopes: [
+            { mass: 24, abundance: 78.99 },
+            { mass: 25, abundance: 10.00 },
+            { mass: 26, abundance: 11.01 }
+        ]
+    },
+
+    germanium: {
+        name: "Germanium",
+        symbol: "Ge",
+        isotopes: [
+            { mass: 70, abundance: 20.84 },
+            { mass: 72, abundance: 27.54 },
+            { mass: 73, abundance: 7.73 },
+            { mass: 74, abundance: 36.28 },
+            { mass: 76, abundance: 7.61 }
+        ]
+    },
+
+    copper: {
+        name: "Copper",
+        symbol: "Cu",
+        isotopes: [
+            { mass: 63, abundance: 69.15 },
+            { mass: 65, abundance: 30.85 }
+        ]
+    },
+
+    carbon: {
+        name: "Carbon",
+        symbol: "C",
+        isotopes: [
+            { mass: 12, abundance: 98.93 },
+            { mass: 13, abundance: 1.07 }
+        ]
+    },
+
+    neon: {
+        name: "Neon",
+        symbol: "Ne",
+        isotopes: [
+            { mass: 20, abundance: 90.48 },
+            { mass: 21, abundance: 0.27 },
+            { mass: 22, abundance: 9.25 }
+        ]
+    },
+
+    silicon: {
+        name: "Silicon",
+        symbol: "Si",
+        isotopes: [
+            { mass: 28, abundance: 92.23 },
+            { mass: 29, abundance: 4.67 },
+            { mass: 30, abundance: 3.10 }
+        ]
+    },
+
+    bromine: {
+        name: "Bromine",
+        symbol: "Br",
+        isotopes: [
+            { mass: 79, abundance: 50.69 },
+            { mass: 81, abundance: 49.31 }
+        ]
+    },
+
+    sulfur: {
+        name: "Sulfur",
+        symbol: "S",
+        isotopes: [
+            { mass: 32, abundance: 94.99 },
+            { mass: 33, abundance: 0.75 },
+            { mass: 34, abundance: 4.25 },
+            { mass: 36, abundance: 0.01 }
+        ]
+    }
+
+};
+
+let chart;
+
+function updateSpectrum() {
+
+    const selectedElement =
+        document.getElementById("elementSelect").value;
+
+    const element = elements[selectedElement];
+
+    document.getElementById("spectrumTitle").textContent =
+        `${element.name} (${element.symbol}) Mass Spectrum`;
+
+    const table =
+        document.getElementById("isotopeTable");
+
+    table.innerHTML = "";
+
+    element.isotopes.forEach(isotope => {
+
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${element.symbol}-${isotope.mass}</td>
+            <td>${isotope.mass}</td>
+            <td>${isotope.abundance.toFixed(2)}%</td>
+        `;
+
+        table.appendChild(row);
+
+    });
+
+    const labels =
+        element.isotopes.map(isotope => isotope.mass);
+
+    const abundances =
+        element.isotopes.map(isotope => isotope.abundance);
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    const ctx =
+        document.getElementById("massSpectrum")
+        .getContext("2d");
+
+    chart = new Chart(ctx, {
+
+        type: "bar",
+
+        data: {
+
+            labels: labels,
+
+            datasets: [{
+
+                label: "Percent Abundance",
+
+                data: abundances,
+
+                backgroundColor: "#d4af37",
+
+                borderColor: "#172554",
+
+                borderWidth: 2,
+
+                barPercentage: 0.12,
+
+                categoryPercentage: 0.8
+
+            }]
+
+        },
+
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    display: false
+                },
+
+                tooltip: {
+
+                    callbacks: {
+
+                        title: function(context) {
+
+                            const mass =
+                                context[0].label;
+
+                            return `${element.symbol}-${mass}`;
+
+                        },
+
+                        label: function(context) {
+
+                            return ` ${context.raw.toFixed(2)}% abundance`;
+
+                        }
+
+                    }
+
+                }
+
+            },
+
+            scales: {
+
+                x: {
+
+                    title: {
+
+                        display: true,
+
+                        text: "Mass Number",
+
+                        font: {
+                            size: 14,
+                            weight: "600"
+                        }
+
+                    },
+
+                    ticks: {
+
+                        font: {
+                            size: 13
+                        }
+
+                    }
+
+                },
+
+                y: {
+
+                    beginAtZero: true,
+
+                    max: 100,
+
+                    title: {
+
+                        display: true,
+
+                        text: "Percent Abundance (%)",
+
+                        font: {
+                            size: 14,
+                            weight: "600"
+                        }
+
+                    },
+
+                    ticks: {
+
+                        callback: function(value) {
+                            return value + "%";
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    });
+
+}
+
+document
+    .getElementById("elementSelect")
+    .addEventListener("change", updateSpectrum);
+
+updateSpectrum();
+
+</script>
+
+</body>
+</html>
